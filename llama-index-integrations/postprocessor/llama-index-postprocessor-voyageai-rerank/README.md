@@ -1,6 +1,6 @@
-# LlamaIndex Postprocessor Integration: VoyageAI Rerank
+# LlamaIndex Postprocessor Integration: VoyageAI by MongoDB Rerank
 
-This package provides the VoyageAI Rerank integration for LlamaIndex, enabling powerful re-ranking of search results using VoyageAI's state-of-the-art reranker models.
+This package provides the VoyageAI by MongoDB Rerank integration for LlamaIndex, enabling powerful re-ranking of search results using VoyageAI by MongoDB's state-of-the-art reranker models.
 
 ## Installation
 

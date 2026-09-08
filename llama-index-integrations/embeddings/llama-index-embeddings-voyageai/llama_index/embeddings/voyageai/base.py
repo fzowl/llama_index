@@ -52,12 +52,14 @@ VOYAGE_TOTAL_TOKEN_LIMITS = {
     "voyage-multimodal-3": 320_000,  # 32k per input, 320k total
     "voyage-multimodal-3.5": 320_000,  # 32k per input, 320k total
     "voyage-4-lite": 1_000_000,
+    "voyage-4-nano": 1_000_000,
     "voyage-3.5-lite": 1_000_000,
     "voyage-4": 320_000,
     "voyage-3.5": 320_000,  # voyage-3.5 supports up to 320k tokens per batch
     "voyage-2": 320_000,
     "voyage-4-large": 120_000,
     "voyage-3-large": 120_000,
+    "voyage-code-4": 120_000,
     "voyage-code-3": 120_000,
     "voyage-large-2-instruct": 120_000,
     "voyage-finance-2": 120_000,
@@ -393,14 +395,17 @@ class VoyageEmbedding(MultiModalEmbedding):
 
         for batch, _ in self._build_batches(texts):
             if self.model_name in CONTEXT_MODELS:
-                r = self._client.contextualized_embed(
-                    inputs=[batch],
+                results = self._client.contextualized_embed(
+                    inputs=batch,
                     model=self.model_name,
                     input_type=input_type,
                     output_dtype=self.output_dtype,
                     output_dimension=self.output_dimension,
+                    enable_auto_chunking=True,
+                    chunk_size=32_000,
                 ).results
-                embeddings.extend(r[0].embeddings)
+                for result in results:
+                    embeddings.extend(result.embeddings)
             elif self.model_name in MULTIMODAL_MODELS:
                 batch_embeddings = self._client.multimodal_embed(
                     inputs=self._texts_to_content(batch),
@@ -429,14 +434,16 @@ class VoyageEmbedding(MultiModalEmbedding):
         for batch, _ in self._build_batches(texts):
             if self.model_name in CONTEXT_MODELS:
                 ar = await self._aclient.contextualized_embed(
-                    inputs=[batch],
+                    inputs=batch,
                     model=self.model_name,
                     input_type=input_type,
                     output_dtype=self.output_dtype,
                     output_dimension=self.output_dimension,
+                    enable_auto_chunking=True,
+                    chunk_size=32_000,
                 )
-                r = ar.results
-                embeddings.extend(r[0].embeddings)
+                for result in ar.results:
+                    embeddings.extend(result.embeddings)
             elif self.model_name in MULTIMODAL_MODELS:
                 r = await self._aclient.multimodal_embed(
                     inputs=self._texts_to_content(batch),

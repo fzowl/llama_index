@@ -354,7 +354,7 @@ Hosted API rerankers:
 - [Cohere Rerank](/python/examples/node_postprocessor/coherererank)
 - [JinaAI Rerank](/python/examples/node_postprocessor/jinarerank)
 - [Mixedbread AI Rerank](/python/examples/node_postprocessor/mixedbreadairerank)
-- [VoyageAI Rerank](/python/examples/node_postprocessor/voyageairerank)
+- [VoyageAI by MongoDB Rerank](/python/examples/node_postprocessor/voyageairerank)
 - [NVIDIA Rerank (NIM)](/python/examples/node_postprocessor/nvidiarerank)
 - [AIMon Rerank](/python/examples/node_postprocessor/aimonrerank)
 - [IBM watsonx.ai](/python/examples/node_postprocessor/ibm_watsonx)

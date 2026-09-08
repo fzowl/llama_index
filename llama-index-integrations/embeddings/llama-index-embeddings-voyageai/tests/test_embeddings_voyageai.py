@@ -370,6 +370,16 @@ def test_embed_context_model_with_batching():
     # Should return all 4 embeddings
     assert len(result) == 4
 
+    # Contextual models must call the API with a flat list[str] of inputs and
+    # server-side auto-chunking enabled at the 32K per-chunk context window.
+    for call in mock_contextualized_embed.call_args_list:
+        assert call.kwargs["inputs"] == ["text1", "text2"] or call.kwargs[
+            "inputs"
+        ] == ["text3", "text4"]
+        assert all(isinstance(item, str) for item in call.kwargs["inputs"])
+        assert call.kwargs["enable_auto_chunking"] is True
+        assert call.kwargs["chunk_size"] == 32_000
+
 
 def test_automatic_batching_due_to_token_limits():
     """Test that batching happens automatically when token limits are exceeded."""

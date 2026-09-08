@@ -434,4 +434,4 @@ LlamaIndex integrates with a wide range of embedding providers: hosted APIs, sel
 - [Text Embeddings Inference](/python/examples/embeddings/text_embedding_inference)
 - [TogetherAI](/python/examples/embeddings/together)
 - [Upstage](/python/examples/embeddings/upstage)
-- [VoyageAI](/python/examples/embeddings/voyageai)
+- [VoyageAI by MongoDB](/python/examples/embeddings/voyageai)

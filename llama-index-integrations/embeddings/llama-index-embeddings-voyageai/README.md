@@ -1,6 +1,6 @@
-# LlamaIndex Embeddings Integration: VoyageAI
+# LlamaIndex Embeddings Integration: VoyageAI by MongoDB
 
-The `llama-index-embeddings-voyageai` package contains LlamaIndex integrations for building applications with VoyageAI's state-of-the-art embedding models. This integration provides support for text embeddings, multimodal embeddings, and contextual embeddings via the VoyageAI API.
+The `llama-index-embeddings-voyageai` package contains LlamaIndex integrations for building applications with VoyageAI by MongoDB's state-of-the-art embedding models. This integration provides support for text embeddings, multimodal embeddings, and contextual embeddings via the VoyageAI API.
 
 ## Installation
 
@@ -146,14 +146,14 @@ video_embedding = await embedding_model.aget_video_embedding(
 
 ### Contextual Embeddings
 
-For enhanced context-aware embeddings using the `voyage-context-3` model:
+For enhanced context-aware embeddings using the `voyage-context-4` (or `voyage-context-3`) model:
 
 ```python
 from llama_index.embeddings.voyageai import VoyageEmbedding
 
 # Initialize with contextual model
 embedding_model = VoyageEmbedding(
-    model_name="voyage-context-3", output_dtype="float", output_dimension=1024
+    model_name="voyage-context-4", output_dtype="float", output_dimension=1024
 )
 
 # The model will use contextualized_embed internally
@@ -162,6 +162,10 @@ embeddings = embedding_model.get_text_embedding_batch(
     ["First document chunk", "Second document chunk", "Third document chunk"]
 )
 ```
+
+Under the hood, contextual models call `contextualized_embed` with
+`enable_auto_chunking=True` and `chunk_size=32000` (the 32K per-chunk context
+window), so each input is embedded with awareness of the surrounding chunks.
 
 ### Async Usage
 
@@ -233,33 +237,38 @@ print(response)
 
 VoyageAI offers several specialized embedding models:
 
-### Text Embeddings
+### Text Embeddings (recommended / latest)
 
-- **voyage-4**: General-purpose and multilingual retrieval with 1024 dimensions (supports 256, 512, 1024, 2048)
-- **voyage-4-lite**: Cost and latency optimized with highest throughput, 1024 dimensions (supports 256, 512, 1024, 2048)
-- **voyage-4-large**: Best retrieval quality in voyage-4 series, 1024 dimensions (supports 256, 512, 1024, 2048)
-- **voyage-3.5**: Latest general-purpose model with 1024 dimensions (supports 256, 512, 1024, 2048)
-- **voyage-3.5-lite**: Cost and latency optimized variant with 1024 dimensions (supports 256, 512, 1024, 2048)
-- **voyage-3-large**: Best for general-purpose and multilingual retrieval, 1024 dimensions (supports 256, 512, 1024, 2048)
-- **voyage-code-3**: Specialized for code retrieval, 1024 dimensions (supports 256, 512, 1024, 2048)
-- **voyage-3**: General-purpose model (1024 dimensions)
-- **voyage-3-lite**: Lightweight variant (512 dimensions)
+- **voyage-4-large**: Best retrieval quality in the voyage-4 series; general-purpose and multilingual, 32K context, 1024 dimensions (supports 256, 512, 1024, 2048)
+- **voyage-4**: General-purpose and multilingual retrieval, 32K context, 1024 dimensions (supports 256, 512, 1024, 2048)
+- **voyage-4-lite**: Cost and latency optimized with highest throughput, 32K context, 1024 dimensions (supports 256, 512, 1024, 2048)
+- **voyage-4-nano**: Smallest and fastest voyage-4 model, open-weight (available on Hugging Face), 32K context, 1024 dimensions (supports 256, 512, 1024, 2048)
+- **voyage-code-4**: Specialized for code retrieval and coding-agent use cases, 32K context, 1024 dimensions (supports 256, 512, 1024, 2048)
 
 ### Domain-Specific Models
 
 - **voyage-finance-2**: Optimized for financial documents (1024 dimensions)
 - **voyage-law-2**: Specialized for legal documents (1024 dimensions)
-- **voyage-multilingual-2**: Enhanced multilingual support (1024 dimensions)
 
-### Specialized Models
+### Multimodal Models
 
+- **voyage-multimodal-3.5**: Latest multimodal model — supports text, image, and video embeddings (32K context, 1024 dimensions, supports 256, 512, 2048)
 - **voyage-multimodal-3**: Supports text and image embeddings (1024 dimensions)
-- **voyage-multimodal-3.5**: Supports text, image, and video embeddings (1024 dimensions, supports 256, 512, 2048). Currently in preview.
-- **voyage-context-4**: Contextualized chunk embeddings with 32K batch token limit (1024 dimensions, supports 256, 512, 1024, 2048). Currently in preview.
-- **voyage-context-3**: Enhanced contextual embeddings with 32K batch token limit (1024 dimensions)
+
+### Contextual Models
+
+- **voyage-context-4**: Latest contextualized chunk embeddings with a 32K per-chunk context window (1024 dimensions, supports 256, 512, 1024, 2048)
+- **voyage-context-3**: Contextualized chunk embeddings with a 32K per-chunk context window (1024 dimensions, supports 256, 512, 1024, 2048)
 
 ### Legacy Models
 
+- **voyage-3-large**: Previous-generation general-purpose and multilingual model (1024 dimensions)
+- **voyage-3.5**: Previous-generation general-purpose model (1024 dimensions)
+- **voyage-3.5-lite**: Previous-generation cost and latency optimized variant (1024 dimensions)
+- **voyage-code-3**: Previous-generation code retrieval model (1024 dimensions)
+- **voyage-multilingual-2**: Multilingual retrieval model (1024 dimensions)
+- **voyage-3**: General-purpose model (1024 dimensions)
+- **voyage-3-lite**: Lightweight variant (512 dimensions)
 - **voyage-2**: Earlier generation model (1024 dimensions)
 - **voyage-large-2**: Large variant (1536 dimensions)
 - **voyage-large-2-instruct**: Large instruct variant (1024 dimensions)
@@ -297,6 +306,7 @@ These limits represent the maximum total tokens that can be sent in a single API
 | Model                   | Batch Token Limit |
 | ----------------------- | ----------------- |
 | voyage-4-lite           | 1,000,000         |
+| voyage-4-nano           | 1,000,000         |
 | voyage-3.5-lite         | 1,000,000         |
 | voyage-4                | 320,000           |
 | voyage-3.5              | 320,000           |
@@ -305,6 +315,7 @@ These limits represent the maximum total tokens that can be sent in a single API
 | voyage-2                | 320,000           |
 | voyage-4-large          | 120,000           |
 | voyage-3-large          | 120,000           |
+| voyage-code-4           | 120,000           |
 | voyage-code-3           | 120,000           |
 | voyage-large-2-instruct | 120,000           |
 | voyage-finance-2        | 120,000           |
