@@ -58,6 +58,7 @@ VOYAGE_TOTAL_TOKEN_LIMITS = {
     "voyage-2": 320_000,
     "voyage-4-large": 120_000,
     "voyage-3-large": 120_000,
+    "voyage-code-4": 120_000,
     "voyage-code-3": 120_000,
     "voyage-large-2-instruct": 120_000,
     "voyage-finance-2": 120_000,
@@ -76,8 +77,8 @@ class VoyageEmbedding(MultiModalEmbedding):
     Class for Voyage embeddings.
 
     Args:
-        model_name (str): Model for embedding.
-            Defaults to "voyage-01".
+        model_name (str): Model for embedding, e.g. "voyage-3.5".
+            See https://docs.voyageai.com/docs/embeddings for the latest models.
 
         voyage_api_key (Optional[str]): Voyage API key. Defaults to None.
             You can either specify the key here or store it as an environment variable.
@@ -115,9 +116,9 @@ class VoyageEmbedding(MultiModalEmbedding):
             "voyage-3-lite",
         ]:
             logger.warning(
-                f"{model_name} is not the latest model by Voyage AI. Please note that `model_name` "
+                f"{model_name} is not the latest model by VoyageAI by MongoDB. Please note that `model_name` "
                 "will be a required argument in the future. We recommend setting it explicitly. Please see "
-                "https://docs.voyageai.com/docs/embeddings for the latest models offered by Voyage AI."
+                "https://docs.voyageai.com/docs/embeddings for the latest models offered by VoyageAI by MongoDB."
             )
 
         if embed_batch_size is None:
@@ -393,14 +394,22 @@ class VoyageEmbedding(MultiModalEmbedding):
 
         for batch, _ in self._build_batches(texts):
             if self.model_name in CONTEXT_MODELS:
-                r = self._client.contextualized_embed(
+                # Contextualized chunk embeddings. Per the official spec the
+                # `inputs` argument accepts Union[List[List[str]], List[str]]:
+                # a nested list where each inner list is one document's chunks,
+                # or a flat list of strings. We pass the batch as a single
+                # document's chunks (List[List[str]]) so that each chunk is
+                # embedded with awareness of its sibling chunks.
+                # https://docs.voyageai.com/docs/contextualized-chunk-embeddings
+                results = self._client.contextualized_embed(
                     inputs=[batch],
                     model=self.model_name,
                     input_type=input_type,
                     output_dtype=self.output_dtype,
                     output_dimension=self.output_dimension,
                 ).results
-                embeddings.extend(r[0].embeddings)
+                for result in results:
+                    embeddings.extend(result.embeddings)
             elif self.model_name in MULTIMODAL_MODELS:
                 batch_embeddings = self._client.multimodal_embed(
                     inputs=self._texts_to_content(batch),
@@ -428,6 +437,13 @@ class VoyageEmbedding(MultiModalEmbedding):
 
         for batch, _ in self._build_batches(texts):
             if self.model_name in CONTEXT_MODELS:
+                # Contextualized chunk embeddings. Per the official spec the
+                # `inputs` argument accepts Union[List[List[str]], List[str]]:
+                # a nested list where each inner list is one document's chunks,
+                # or a flat list of strings. We pass the batch as a single
+                # document's chunks (List[List[str]]) so that each chunk is
+                # embedded with awareness of its sibling chunks.
+                # https://docs.voyageai.com/docs/contextualized-chunk-embeddings
                 ar = await self._aclient.contextualized_embed(
                     inputs=[batch],
                     model=self.model_name,
@@ -435,8 +451,8 @@ class VoyageEmbedding(MultiModalEmbedding):
                     output_dtype=self.output_dtype,
                     output_dimension=self.output_dimension,
                 )
-                r = ar.results
-                embeddings.extend(r[0].embeddings)
+                for result in ar.results:
+                    embeddings.extend(result.embeddings)
             elif self.model_name in MULTIMODAL_MODELS:
                 r = await self._aclient.multimodal_embed(
                     inputs=self._texts_to_content(batch),
