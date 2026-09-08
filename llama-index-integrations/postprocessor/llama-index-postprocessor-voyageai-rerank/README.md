@@ -1,6 +1,6 @@
-# LlamaIndex Postprocessor Integration: VoyageAI Rerank
+# LlamaIndex Postprocessor Integration: VoyageAI by MongoDB Rerank
 
-This package provides the VoyageAI Rerank integration for LlamaIndex, enabling powerful re-ranking of search results using VoyageAI's state-of-the-art reranker models.
+This package provides the VoyageAI by MongoDB Rerank integration for LlamaIndex, enabling powerful re-ranking of search results using VoyageAI by MongoDB's state-of-the-art reranker models.
 
 ## Installation
 
@@ -12,7 +12,7 @@ pip install llama-index-postprocessor-voyageai-rerank
 
 ### Get Your API Key
 
-Sign up for a VoyageAI account and obtain your API key from the [VoyageAI Dashboard](https://dash.voyageai.com/).
+Sign up for a VoyageAI by MongoDB account and obtain your API key from the [VoyageAI by MongoDB Dashboard](https://dash.voyageai.com/).
 
 ### Set Environment Variable
 
@@ -62,7 +62,7 @@ from llama_index.postprocessor.voyageai_rerank import VoyageAIRerank
 # Setup
 documents = [
     Document(text="LlamaIndex is a data framework for LLM applications."),
-    Document(text="VoyageAI provides state-of-the-art embedding models."),
+    Document(text="VoyageAI by MongoDB provides state-of-the-art embedding models."),
     Document(text="Rerankers improve search quality by re-scoring results."),
 ]
 index = VectorStoreIndex.from_documents(documents)
@@ -79,14 +79,14 @@ response = query_engine.query("How do rerankers work?")
 print(response)
 ```
 
-### Combined with VoyageAI Embeddings
+### Combined with VoyageAI by MongoDB Embeddings
 
 ```python
 from llama_index.core import VectorStoreIndex, Document, Settings
 from llama_index.embeddings.voyageai import VoyageEmbedding
 from llama_index.postprocessor.voyageai_rerank import VoyageAIRerank
 
-# Use VoyageAI for both embeddings and reranking
+# Use VoyageAI by MongoDB for both embeddings and reranking
 Settings.embed_model = VoyageEmbedding(model_name="voyage-3.5")
 
 documents = [
@@ -109,28 +109,31 @@ print(response)
 
 ## Available Models
 
-VoyageAI offers several reranker models optimized for different use cases:
+VoyageAI by MongoDB offers several reranker models optimized for different use cases. The list
+below reflects the models currently available at [docs.voyageai.com](https://docs.voyageai.com/docs/reranker).
 
-### Current Models
+### Latest Models
 
-- **rerank-2.5**: Latest generalist model with 32K context length, instruction-following, and multilingual capabilities (recommended)
-- **rerank-2.5-lite**: Optimized for both speed and accuracy, 32K context, multilingual support
-- **rerank-2**: Earlier generation model with stable performance
-- **rerank-2-lite**: Faster variant of rerank-2
+- **rerank-3**: Highest-accuracy generalist reranker, 32K context (in preview)
+- **rerank-3-lite**: Latency-optimized variant of rerank-3, 32K context (in preview)
+- **rerank-2.5**: Generalist model with 32K context length, instruction-following, and multilingual capabilities (recommended)
+- **rerank-2.5-lite**: Optimized for both speed and accuracy, 32K context, multilingual support (recommended)
 
 ### Legacy Models
 
+- **rerank-2**: Earlier generation model with stable performance
+- **rerank-2-lite**: Faster variant of rerank-2
 - **rerank-1**: Original reranker model
 - **rerank-lite-1**: Lightweight variant
 
-For the latest models, see the [VoyageAI Reranker documentation](https://docs.voyageai.com/docs/reranker).
+For the latest models, see the [VoyageAI by MongoDB Reranker documentation](https://docs.voyageai.com/docs/reranker).
 
 ## Configuration Options
 
 | Parameter    | Type           | Default  | Description                                                     |
 | ------------ | -------------- | -------- | --------------------------------------------------------------- |
 | `model`      | str            | Required | The reranker model to use                                       |
-| `api_key`    | str (optional) | None     | VoyageAI API key (falls back to VOYAGE_API_KEY environment var) |
+| `api_key`    | str (optional) | None     | VoyageAI by MongoDB API key (falls back to VOYAGE_API_KEY environment var) |
 | `top_n`      | int (optional) | None     | Number of top results to return. If None, returns all reranked  |
 | `truncation` | bool           | True     | Whether to auto-truncate documents to fit within token limits   |
 
@@ -149,7 +152,7 @@ This two-stage approach balances speed (fast vector search) with accuracy (preci
 
 ## Features
 
-- **State-of-the-art Models**: Access to VoyageAI's latest reranker models
+- **State-of-the-art Models**: Access to VoyageAI by MongoDB's latest reranker models
 - **Easy Integration**: Drop-in compatibility with LlamaIndex retrievers and query engines
 - **Flexible Configuration**: Control number of results and truncation behavior
 - **Multilingual Support**: Works with multiple languages (rerank-2.5 models)
@@ -160,10 +163,12 @@ This two-stage approach balances speed (fast vector search) with accuracy (preci
 
 | Model           | Max Query Tokens | Max Document Tokens | Total Context |
 | --------------- | ---------------- | ------------------- | ------------- |
+| rerank-3        | 8,000            | Per document        | 32,000        |
+| rerank-3-lite   | 8,000            | Per document        | 32,000        |
 | rerank-2.5      | 8,000            | Per document        | 32,000        |
 | rerank-2.5-lite | 8,000            | Per document        | 32,000        |
-| rerank-2        | 8,000            | Per document        | 4,000         |
-| rerank-2-lite   | 8,000            | Per document        | 4,000         |
+| rerank-2        | 4,000            | Per document        | 16,000        |
+| rerank-2-lite   | 2,000            | Per document        | 8,000         |
 
 The reranker can process up to 1,000 documents per request.
 
@@ -171,7 +176,7 @@ The reranker can process up to 1,000 documents per request.
 
 | Variable         | Description                 |
 | ---------------- | --------------------------- |
-| `VOYAGE_API_KEY` | VoyageAI API key (required) |
+| `VOYAGE_API_KEY` | VoyageAI by MongoDB API key (required) |
 
 ## Best Practices
 
@@ -207,11 +212,11 @@ reranker = VoyageAIRerank(
 
 ## Additional Information
 
-For more information about VoyageAI rerankers:
+For more information about VoyageAI by MongoDB rerankers:
 
-- [VoyageAI Documentation](https://docs.voyageai.com/)
-- [VoyageAI Reranker Guide](https://docs.voyageai.com/docs/reranker)
-- [VoyageAI Dashboard](https://dash.voyageai.com/)
+- [VoyageAI by MongoDB Documentation](https://docs.voyageai.com/)
+- [VoyageAI by MongoDB Reranker Guide](https://docs.voyageai.com/docs/reranker)
+- [VoyageAI by MongoDB Dashboard](https://dash.voyageai.com/)
 - [API Reference](https://docs.voyageai.com/reference/reranker-api)
 
 ## License

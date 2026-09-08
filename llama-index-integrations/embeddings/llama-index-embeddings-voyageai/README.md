@@ -1,6 +1,6 @@
-# LlamaIndex Embeddings Integration: VoyageAI
+# LlamaIndex Embeddings Integration: VoyageAI by MongoDB
 
-The `llama-index-embeddings-voyageai` package contains LlamaIndex integrations for building applications with VoyageAI's state-of-the-art embedding models. This integration provides support for text embeddings, multimodal embeddings, and contextual embeddings via the VoyageAI API.
+The `llama-index-embeddings-voyageai` package contains LlamaIndex integrations for building applications with VoyageAI by MongoDB's state-of-the-art embedding models. This integration provides support for text embeddings, multimodal embeddings, and contextual embeddings via the VoyageAI by MongoDB API.
 
 ## Installation
 
@@ -12,7 +12,7 @@ pip install llama-index-embeddings-voyageai
 
 ### 1. Get Your API Key
 
-Sign up for a VoyageAI account and obtain your API key from the [VoyageAI Dashboard](https://dash.voyageai.com/).
+Sign up for a VoyageAI by MongoDB account and obtain your API key from the [VoyageAI by MongoDB Dashboard](https://dash.voyageai.com/).
 
 ### 2. Set Environment Variable
 
@@ -29,7 +29,7 @@ export VOYAGE_API_KEY="your-api-key-here"
 ```python
 from llama_index.embeddings.voyageai import VoyageEmbedding
 
-# Initialize the VoyageAI Embedding model
+# Initialize the VoyageAI by MongoDB Embedding model
 embedding_model = VoyageEmbedding(
     model_name="voyage-3.5",
     voyage_api_key="your-api-key",  # Optional if VOYAGE_API_KEY is set
@@ -47,7 +47,7 @@ print(f"Number of embeddings: {len(embeddings)}")
 
 ### Query vs Document Embeddings
 
-VoyageAI embeddings distinguish between queries and documents for optimal retrieval performance:
+VoyageAI by MongoDB embeddings distinguish between queries and documents for optimal retrieval performance:
 
 ```python
 from llama_index.embeddings.voyageai import VoyageEmbedding
@@ -85,7 +85,7 @@ embedding = embedding_model.get_general_text_embedding(
 
 ### Multimodal Embeddings
 
-VoyageAI supports multimodal embeddings for text and images with `voyage-multimodal-3`, and text, images, and **video** with `voyage-multimodal-3.5`. **Important:** You must set `truncation=True` when using multimodal models.
+VoyageAI by MongoDB supports multimodal embeddings for text and images with `voyage-multimodal-3`, and text, images, and **video** with `voyage-multimodal-3.5`. **Important:** You must set `truncation=True` when using multimodal models.
 
 ```python
 from llama_index.embeddings.voyageai import VoyageEmbedding
@@ -216,7 +216,7 @@ Settings.embed_model = VoyageEmbedding(
 # Create documents
 documents = [
     Document(text="LlamaIndex is a data framework for LLM applications."),
-    Document(text="VoyageAI provides state-of-the-art embedding models."),
+    Document(text="VoyageAI by MongoDB provides state-of-the-art embedding models."),
     Document(text="Embeddings convert text into numerical vectors."),
 ]
 
@@ -231,48 +231,55 @@ print(response)
 
 ## Available Models
 
-VoyageAI offers several specialized embedding models:
+VoyageAI by MongoDB offers several specialized embedding models. The list below
+reflects the models currently available at [docs.voyageai.com](https://docs.voyageai.com/docs/embeddings);
+newer models are strictly better than the legacy ones in quality, context length,
+latency, and throughput.
 
-### Text Embeddings
+### Text Embeddings (latest, recommended)
 
-- **voyage-4**: General-purpose and multilingual retrieval with 1024 dimensions (supports 256, 512, 1024, 2048)
-- **voyage-4-lite**: Cost and latency optimized with highest throughput, 1024 dimensions (supports 256, 512, 1024, 2048)
-- **voyage-4-large**: Best retrieval quality in voyage-4 series, 1024 dimensions (supports 256, 512, 1024, 2048)
-- **voyage-3.5**: Latest general-purpose model with 1024 dimensions (supports 256, 512, 1024, 2048)
-- **voyage-3.5-lite**: Cost and latency optimized variant with 1024 dimensions (supports 256, 512, 1024, 2048)
-- **voyage-3-large**: Best for general-purpose and multilingual retrieval, 1024 dimensions (supports 256, 512, 1024, 2048)
-- **voyage-code-3**: Specialized for code retrieval, 1024 dimensions (supports 256, 512, 1024, 2048)
-- **voyage-3**: General-purpose model (1024 dimensions)
-- **voyage-3-lite**: Lightweight variant (512 dimensions)
+- **voyage-4-large**: Best general-purpose and multilingual retrieval quality, 32K context, 1024 dimensions (supports 256, 512, 1024, 2048)
+- **voyage-4**: General-purpose and multilingual retrieval, 32K context, 1024 dimensions (supports 256, 512, 1024, 2048)
+- **voyage-4-lite**: Cost and latency optimized with the highest throughput, 32K context, 1024 dimensions (supports 256, 512, 1024, 2048)
+- **voyage-code-4**: Optimized for code retrieval and coding-agent use cases, 32K context, 1024 dimensions (supports 256, 512, 1024, 2048)
+- **voyage-4-nano**: Open-weight model in the 4 series (available on Hugging Face), 32K context, 1024 dimensions (supports 256, 512, 1024, 2048)
 
 ### Domain-Specific Models
 
-- **voyage-finance-2**: Optimized for financial documents (1024 dimensions)
-- **voyage-law-2**: Specialized for legal documents (1024 dimensions)
-- **voyage-multilingual-2**: Enhanced multilingual support (1024 dimensions)
+- **voyage-finance-2**: Optimized for financial documents, 32K context, 1024 dimensions
+- **voyage-law-2**: Specialized for legal documents, 16K context, 1024 dimensions
 
-### Specialized Models
+### Multimodal Models
 
-- **voyage-multimodal-3**: Supports text and image embeddings (1024 dimensions)
-- **voyage-multimodal-3.5**: Supports text, image, and video embeddings (1024 dimensions, supports 256, 512, 2048). Currently in preview.
-- **voyage-context-4**: Contextualized chunk embeddings with 32K batch token limit (1024 dimensions, supports 256, 512, 1024, 2048). Currently in preview.
-- **voyage-context-3**: Enhanced contextual embeddings with 32K batch token limit (1024 dimensions)
+- **voyage-multimodal-3.5**: Text, image, and video embeddings, 32K context, 1024 dimensions (supports 256, 512, 1024, 2048)
+- **voyage-multimodal-3** (legacy): Text and image embeddings, 32K context, 1024 dimensions
 
-### Legacy Models
+### Contextual Models (contextualized chunk embeddings)
 
-- **voyage-2**: Earlier generation model (1024 dimensions)
-- **voyage-large-2**: Large variant (1536 dimensions)
-- **voyage-large-2-instruct**: Large instruct variant (1024 dimensions)
-- **voyage-code-2**: Code embedding model (1536 dimensions)
+- **voyage-context-4**: Contextualized chunk embeddings, 32K tokens per chunk, 1024 dimensions (supports 256, 512, 1024, 2048)
+- **voyage-context-3** (legacy): Contextualized chunk embeddings, 32K tokens per chunk, 1024 dimensions (supports 256, 512, 1024, 2048)
 
-For the latest model information, visit the [VoyageAI documentation](https://docs.voyageai.com/docs/embeddings).
+### Legacy Text Models (still accessible)
+
+- **voyage-3-large**: 32K context, 1024 dimensions (supports 256, 512, 2048)
+- **voyage-3.5**: 32K context, 1024 dimensions (supports 256, 512, 2048)
+- **voyage-3.5-lite**: 32K context, 1024 dimensions (supports 256, 512, 2048)
+- **voyage-3**: 32K context, 1024 dimensions
+- **voyage-3-lite**: 32K context, 512 dimensions
+- **voyage-code-3**: 32K context, 1024 dimensions (supports 256, 512, 2048)
+- **voyage-multilingual-2**: 32K context, 1024 dimensions
+- **voyage-large-2-instruct**: 16K context, 1024 dimensions
+- **voyage-large-2**: 16K context, 1536 dimensions
+- **voyage-2**: 4K context, 1024 dimensions
+
+For the latest model information, visit the [VoyageAI by MongoDB documentation](https://docs.voyageai.com/docs/embeddings).
 
 ## Configuration Options
 
 | Parameter          | Type            | Default  | Description                                                   |
 | ------------------ | --------------- | -------- | ------------------------------------------------------------- |
 | `model_name`       | str             | Required | The embedding model to use                                    |
-| `voyage_api_key`   | str             | `None`   | VoyageAI API key (falls back to VOYAGE_API_KEY env var)       |
+| `voyage_api_key`   | str             | `None`   | VoyageAI by MongoDB API key (falls back to VOYAGE_API_KEY env var) |
 | `embed_batch_size` | int             | `1000`   | Batch size for embedding calls (max 1000)                     |
 | `truncation`       | bool            | `None`   | Enable text truncation for long inputs                        |
 | `output_dtype`     | str             | `None`   | Output format: "float", "int8", "uint8", "binary", "ubinary"  |
@@ -305,6 +312,7 @@ These limits represent the maximum total tokens that can be sent in a single API
 | voyage-2                | 320,000           |
 | voyage-4-large          | 120,000           |
 | voyage-3-large          | 120,000           |
+| voyage-code-4           | 120,000           |
 | voyage-code-3           | 120,000           |
 | voyage-large-2-instruct | 120,000           |
 | voyage-finance-2        | 120,000           |
@@ -323,7 +331,7 @@ These limits represent the maximum total tokens that can be sent in a single API
 
 | Variable         | Description                 |
 | ---------------- | --------------------------- |
-| `VOYAGE_API_KEY` | VoyageAI API key (required) |
+| `VOYAGE_API_KEY` | VoyageAI by MongoDB API key (required) |
 
 ## Error Handling
 
@@ -337,11 +345,11 @@ The integration includes proper error handling for:
 
 ## Additional Information
 
-For more information about VoyageAI and its embedding models:
+For more information about VoyageAI by MongoDB and its embedding models:
 
-- [VoyageAI Documentation](https://docs.voyageai.com/)
-- [VoyageAI Embeddings Guide](https://docs.voyageai.com/docs/embeddings)
-- [VoyageAI Dashboard](https://dash.voyageai.com/)
+- [VoyageAI by MongoDB Documentation](https://docs.voyageai.com/)
+- [VoyageAI by MongoDB Embeddings Guide](https://docs.voyageai.com/docs/embeddings)
+- [VoyageAI by MongoDB Dashboard](https://dash.voyageai.com/)
 - [API Reference](https://docs.voyageai.com/reference/embeddings-api)
 
 ## License
