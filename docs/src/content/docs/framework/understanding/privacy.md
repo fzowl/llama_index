@@ -46,7 +46,7 @@ No API key, no outbound network calls from the embedding, reranking, or retrieva
 
 ## Data privacy with hosted APIs
 
-If you use a hosted LLM or embedding provider, data privacy is governed by that provider's terms. OpenAI, Anthropic, Cohere, Voyage, and similar each publish their own policies and offer enterprise agreements. LlamaIndex itself does not store your data, but it will send requests to whichever providers you configure.
+If you use a hosted LLM or embedding provider, data privacy is governed by that provider's terms. OpenAI, Anthropic, Cohere, Voyage AI by MongoDB, and similar each publish their own policies and offer enterprise agreements. LlamaIndex itself does not store your data, but it will send requests to whichever providers you configure.
 
 Common mitigations short of going fully local:
 

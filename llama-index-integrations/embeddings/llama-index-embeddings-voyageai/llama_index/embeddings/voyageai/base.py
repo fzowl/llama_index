@@ -44,11 +44,17 @@ SUPPORTED_VIDEO_FORMATS = {
     "3gp",
 }
 
+# Contextualized embeddings are always sent with server-side auto-chunking in
+# document mode, with chunks of up to 32k tokens (the largest allowed).
+CONTEXT_CHUNK_SIZE = 32_000
+# Without auto-chunking (query mode) a request is limited to 32k tokens in total.
+CONTEXT_QUERY_TOKEN_LIMIT = 32_000
+
 VOYAGE_TOTAL_TOKEN_LIMITS = {
-    # Contextualized models embed a batch as a single document; a single
-    # contextualized document is limited to 32k tokens per request.
-    "voyage-context-4": 32_000,
-    "voyage-context-3": 32_000,
+    # With auto-chunking (document mode) a contextualized request may hold up
+    # to 120k tokens across all inputs.
+    "voyage-context-4": 120_000,
+    "voyage-context-3": 120_000,
     "voyage-multimodal-3": 320_000,  # 32k per input, 320k total
     "voyage-multimodal-3.5": 320_000,  # 32k per input, 320k total
     "voyage-4-lite": 1_000_000,
@@ -73,13 +79,13 @@ VOYAGE_TOTAL_TOKEN_LIMITS = {
 
 class VoyageEmbedding(MultiModalEmbedding):
     """
-    Class for Voyage embeddings.
+    Class for Voyage AI by MongoDB embeddings.
 
     Args:
         model_name (str): Model for embedding.
             Defaults to "voyage-01".
 
-        voyage_api_key (Optional[str]): Voyage API key. Defaults to None.
+        voyage_api_key (Optional[str]): Voyage AI API key. Defaults to None.
             You can either specify the key here or store it as an environment variable.
 
     """
@@ -115,9 +121,9 @@ class VoyageEmbedding(MultiModalEmbedding):
             "voyage-3-lite",
         ]:
             logger.warning(
-                f"{model_name} is not the latest model by Voyage AI. Please note that `model_name` "
+                f"{model_name} is not the latest model by Voyage AI by MongoDB. Please note that `model_name` "
                 "will be a required argument in the future. We recommend setting it explicitly. Please see "
-                "https://docs.voyageai.com/docs/embeddings for the latest models offered by Voyage AI."
+                "https://docs.voyageai.com/docs/embeddings for the latest models offered by Voyage AI by MongoDB."
             )
 
         if embed_batch_size is None:
@@ -154,11 +160,16 @@ class VoyageEmbedding(MultiModalEmbedding):
     def _texts_to_content(cls, input_strs: List[str]) -> List[dict]:
         return [{"content": [{"type": "text", "text": x}]} for x in input_strs]
 
+    def _max_tokens_per_batch(self, input_type: Optional[str]) -> int:
+        if self.model_name in CONTEXT_MODELS and input_type != "document":
+            return CONTEXT_QUERY_TOKEN_LIMIT
+        return VOYAGE_TOTAL_TOKEN_LIMITS.get(self.model_name, 120_000)
+
     def _build_batches(
-        self, texts: List[str]
+        self, texts: List[str], input_type: Optional[str] = "document"
     ) -> Generator[Tuple[List[str], int], None, None]:
         """Generate batches of texts based on token limits."""
-        max_tokens_per_batch = VOYAGE_TOTAL_TOKEN_LIMITS.get(self.model_name, 120_000)
+        max_tokens_per_batch = self._max_tokens_per_batch(input_type)
         index = 0
 
         while index < len(texts):
@@ -214,6 +225,8 @@ class VoyageEmbedding(MultiModalEmbedding):
             inputs=[[processed_image]],
             input_type=input_type,
             truncation=self.truncation if self.truncation is not None else True,
+            output_dtype=self.output_dtype,
+            output_dimension=self.output_dimension,
         ).embeddings[0]
 
     async def _aembed_image(
@@ -231,6 +244,8 @@ class VoyageEmbedding(MultiModalEmbedding):
                 inputs=[[processed_image]],
                 input_type=input_type,
                 truncation=self.truncation if self.truncation is not None else True,
+                output_dtype=self.output_dtype,
+                output_dimension=self.output_dimension,
             )
         ).embeddings[0]
 
@@ -291,6 +306,8 @@ class VoyageEmbedding(MultiModalEmbedding):
             inputs=[[video]],
             input_type=input_type,
             truncation=self.truncation if self.truncation is not None else True,
+            output_dtype=self.output_dtype,
+            output_dimension=self.output_dimension,
         ).embeddings[0]
 
     async def aget_video_embedding(
@@ -322,6 +339,8 @@ class VoyageEmbedding(MultiModalEmbedding):
                 inputs=[[video]],
                 input_type=input_type,
                 truncation=self.truncation if self.truncation is not None else True,
+                output_dtype=self.output_dtype,
+                output_dimension=self.output_dimension,
             )
         ).embeddings[0]
 
@@ -353,6 +372,8 @@ class VoyageEmbedding(MultiModalEmbedding):
             inputs=videos,
             input_type=input_type,
             truncation=self.truncation if self.truncation is not None else True,
+            output_dtype=self.output_dtype,
+            output_dimension=self.output_dimension,
         ).embeddings
 
     async def aget_video_embeddings(
@@ -384,29 +405,75 @@ class VoyageEmbedding(MultiModalEmbedding):
                 inputs=videos,
                 input_type=input_type,
                 truncation=self.truncation if self.truncation is not None else True,
+                output_dtype=self.output_dtype,
+                output_dimension=self.output_dimension,
             )
         ).embeddings
+
+    def _contextualized_kwargs(self, input_type: Optional[str]) -> dict:
+        """
+        Build the contextualized_embed arguments for a flat list of texts.
+
+        Documents are auto-chunked by the API (one string is one document);
+        queries are embedded as they are, because auto-chunking only works
+        with input_type="document".
+        """
+        kwargs: dict = {
+            "model": self.model_name,
+            "input_type": input_type,
+            "output_dtype": self.output_dtype,
+            "output_dimension": self.output_dimension,
+        }
+        if input_type == "document":
+            kwargs["enable_auto_chunking"] = True
+            kwargs["chunk_size"] = CONTEXT_CHUNK_SIZE
+        elif input_type != "query":
+            raise ValueError(
+                f"{self.model_name} requires input_type to be 'document' or "
+                f"'query', got {input_type!r}."
+            )
+        return kwargs
+
+    @staticmethod
+    def _contextualized_embeddings(
+        results: List[Any], batch: List[str]
+    ) -> List[List[float]]:
+        """Return exactly one embedding per input text, in input order."""
+        ordered = sorted(results, key=lambda result: result.index)
+        if len(ordered) != len(batch):
+            raise ValueError(
+                f"Expected {len(batch)} contextualized results, got {len(ordered)}."
+            )
+        embeddings: List[List[float]] = []
+        for position, result in enumerate(ordered):
+            if len(result.embeddings) != 1:
+                raise ValueError(
+                    f"Input text {position} of the batch was split into "
+                    f"{len(result.embeddings)} chunks. Only texts that fit into "
+                    f"a single chunk of {CONTEXT_CHUNK_SIZE} tokens can be "
+                    "embedded with a contextualized model."
+                )
+            embeddings.append(result.embeddings[0])
+        return embeddings
 
     def _embed(self, texts: List[str], input_type: str) -> List[List[float]]:
         """Embed texts with dynamic batching based on token limits."""
         embeddings: List[List[float]] = []
 
-        for batch, _ in self._build_batches(texts):
+        for batch, _ in self._build_batches(texts, input_type):
             if self.model_name in CONTEXT_MODELS:
                 r = self._client.contextualized_embed(
-                    inputs=[batch],
-                    model=self.model_name,
-                    input_type=input_type,
-                    output_dtype=self.output_dtype,
-                    output_dimension=self.output_dimension,
+                    inputs=batch, **self._contextualized_kwargs(input_type)
                 ).results
-                embeddings.extend(r[0].embeddings)
+                embeddings.extend(self._contextualized_embeddings(r, batch))
             elif self.model_name in MULTIMODAL_MODELS:
                 batch_embeddings = self._client.multimodal_embed(
                     inputs=self._texts_to_content(batch),
                     model=self.model_name,
                     input_type=input_type,
                     truncation=self.truncation if self.truncation is not None else True,
+                    output_dtype=self.output_dtype,
+                    output_dimension=self.output_dimension,
                 ).embeddings
                 embeddings.extend(batch_embeddings)
             else:
@@ -426,23 +493,20 @@ class VoyageEmbedding(MultiModalEmbedding):
         """Asynchronously embed texts with dynamic batching based on token limits."""
         embeddings: List[List[float]] = []
 
-        for batch, _ in self._build_batches(texts):
+        for batch, _ in self._build_batches(texts, input_type):
             if self.model_name in CONTEXT_MODELS:
                 ar = await self._aclient.contextualized_embed(
-                    inputs=[batch],
-                    model=self.model_name,
-                    input_type=input_type,
-                    output_dtype=self.output_dtype,
-                    output_dimension=self.output_dimension,
+                    inputs=batch, **self._contextualized_kwargs(input_type)
                 )
-                r = ar.results
-                embeddings.extend(r[0].embeddings)
+                embeddings.extend(self._contextualized_embeddings(ar.results, batch))
             elif self.model_name in MULTIMODAL_MODELS:
                 r = await self._aclient.multimodal_embed(
                     inputs=self._texts_to_content(batch),
                     model=self.model_name,
                     input_type=input_type,
                     truncation=self.truncation if self.truncation is not None else True,
+                    output_dtype=self.output_dtype,
+                    output_dimension=self.output_dimension,
                 )
                 embeddings.extend(r.embeddings)
             else:
