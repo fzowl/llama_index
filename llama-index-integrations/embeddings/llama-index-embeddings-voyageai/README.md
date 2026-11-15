@@ -1,6 +1,6 @@
-# LlamaIndex Embeddings Integration: VoyageAI
+# LlamaIndex Embeddings Integration: Voyage AI by MongoDB
 
-The `llama-index-embeddings-voyageai` package contains LlamaIndex integrations for building applications with VoyageAI's state-of-the-art embedding models. This integration provides support for text embeddings, multimodal embeddings, and contextual embeddings via the VoyageAI API.
+The `llama-index-embeddings-voyageai` package contains LlamaIndex integrations for building applications with Voyage AI by MongoDB's state-of-the-art embedding models. This integration provides support for text embeddings, multimodal embeddings, and contextual embeddings via the Voyage AI API.
 
 ## Installation
 
@@ -12,7 +12,7 @@ pip install llama-index-embeddings-voyageai
 
 ### 1. Get Your API Key
 
-Sign up for a VoyageAI account and obtain your API key from the [VoyageAI Dashboard](https://dash.voyageai.com/).
+Sign up for a Voyage AI by MongoDB account and obtain your API key from the [Voyage AI Dashboard](https://dash.voyageai.com/).
 
 ### 2. Set Environment Variable
 
@@ -29,7 +29,7 @@ export VOYAGE_API_KEY="your-api-key-here"
 ```python
 from llama_index.embeddings.voyageai import VoyageEmbedding
 
-# Initialize the VoyageAI Embedding model
+# Initialize the Voyage AI Embedding model
 embedding_model = VoyageEmbedding(
     model_name="voyage-3.5",
     voyage_api_key="your-api-key",  # Optional if VOYAGE_API_KEY is set
@@ -47,7 +47,7 @@ print(f"Number of embeddings: {len(embeddings)}")
 
 ### Query vs Document Embeddings
 
-VoyageAI embeddings distinguish between queries and documents for optimal retrieval performance:
+Voyage AI embeddings distinguish between queries and documents for optimal retrieval performance:
 
 ```python
 from llama_index.embeddings.voyageai import VoyageEmbedding
@@ -85,7 +85,7 @@ embedding = embedding_model.get_general_text_embedding(
 
 ### Multimodal Embeddings
 
-VoyageAI supports multimodal embeddings for text and images with `voyage-multimodal-3`, and text, images, and **video** with `voyage-multimodal-3.5`. **Important:** You must set `truncation=True` when using multimodal models.
+Voyage AI supports multimodal embeddings for text and images with `voyage-multimodal-3`, and text, images, and **video** with `voyage-multimodal-3.5`. **Important:** You must set `truncation=True` when using multimodal models.
 
 ```python
 from llama_index.embeddings.voyageai import VoyageEmbedding
@@ -146,22 +146,29 @@ video_embedding = await embedding_model.aget_video_embedding(
 
 ### Contextual Embeddings
 
-For enhanced context-aware embeddings using the `voyage-context-3` model:
+For contextualized chunk embeddings use the `voyage-context-4` (or `voyage-context-3`) model:
 
 ```python
 from llama_index.embeddings.voyageai import VoyageEmbedding
 
 # Initialize with contextual model
 embedding_model = VoyageEmbedding(
-    model_name="voyage-context-3", output_dtype="float", output_dimension=1024
+    model_name="voyage-context-4", output_dtype="float", output_dimension=1024
 )
 
-# The model will use contextualized_embed internally
-# providing enhanced embeddings with better context understanding
+# Each text is one document. The API chunks documents server-side
+# (`enable_auto_chunking=True`, `chunk_size=32000`) and each text yields one
+# embedding. A text that does not fit in a single 32k-token chunk raises a
+# `ValueError`.
 embeddings = embedding_model.get_text_embedding_batch(
-    ["First document chunk", "Second document chunk", "Third document chunk"]
+    ["First document", "Second document", "Third document"]
 )
+
+# Queries are embedded without auto-chunking
+query_embedding = embedding_model.get_query_embedding("What is in the first?")
 ```
+
+Contextualized models only accept `input_type="document"` (texts) or `input_type="query"` (queries); any other value raises a `ValueError`.
 
 ### Async Usage
 
@@ -216,7 +223,9 @@ Settings.embed_model = VoyageEmbedding(
 # Create documents
 documents = [
     Document(text="LlamaIndex is a data framework for LLM applications."),
-    Document(text="VoyageAI provides state-of-the-art embedding models."),
+    Document(
+        text="Voyage AI by MongoDB provides state-of-the-art embedding models."
+    ),
     Document(text="Embeddings convert text into numerical vectors."),
 ]
 
@@ -231,32 +240,33 @@ print(response)
 
 ## Available Models
 
-VoyageAI offers several specialized embedding models:
+Voyage AI by MongoDB offers several specialized embedding models:
 
 ### Text Embeddings
 
+- **voyage-4-large**: Best retrieval quality in the voyage-4 series, 1024 dimensions (supports 256, 512, 1024, 2048)
 - **voyage-4**: General-purpose and multilingual retrieval with 1024 dimensions (supports 256, 512, 1024, 2048)
 - **voyage-4-lite**: Cost and latency optimized with highest throughput, 1024 dimensions (supports 256, 512, 1024, 2048)
-- **voyage-4-large**: Best retrieval quality in voyage-4 series, 1024 dimensions (supports 256, 512, 1024, 2048)
-- **voyage-3.5**: Latest general-purpose model with 1024 dimensions (supports 256, 512, 1024, 2048)
+- **voyage-code-4**: Specialized for code retrieval and coding agents, 1024 dimensions (supports 256, 512, 1024, 2048)
+- **voyage-3-large**: General-purpose and multilingual retrieval, 1024 dimensions (supports 256, 512, 1024, 2048)
+- **voyage-3.5**: General-purpose model with 1024 dimensions (supports 256, 512, 1024, 2048)
 - **voyage-3.5-lite**: Cost and latency optimized variant with 1024 dimensions (supports 256, 512, 1024, 2048)
-- **voyage-3-large**: Best for general-purpose and multilingual retrieval, 1024 dimensions (supports 256, 512, 1024, 2048)
 - **voyage-code-3**: Specialized for code retrieval, 1024 dimensions (supports 256, 512, 1024, 2048)
 - **voyage-3**: General-purpose model (1024 dimensions)
 - **voyage-3-lite**: Lightweight variant (512 dimensions)
 
 ### Domain-Specific Models
 
-- **voyage-finance-2**: Optimized for financial documents (1024 dimensions)
-- **voyage-law-2**: Specialized for legal documents (1024 dimensions)
+- **voyage-finance-2**: Optimized for financial documents (1024 dimensions, 32K context)
+- **voyage-law-2**: Specialized for legal documents (1024 dimensions, 16K context)
 - **voyage-multilingual-2**: Enhanced multilingual support (1024 dimensions)
 
 ### Specialized Models
 
 - **voyage-multimodal-3**: Supports text and image embeddings (1024 dimensions)
-- **voyage-multimodal-3.5**: Supports text, image, and video embeddings (1024 dimensions, supports 256, 512, 2048). Currently in preview.
-- **voyage-context-4**: Contextualized chunk embeddings with 32K batch token limit (1024 dimensions, supports 256, 512, 1024, 2048). Currently in preview.
-- **voyage-context-3**: Enhanced contextual embeddings with 32K batch token limit (1024 dimensions)
+- **voyage-multimodal-3.5**: Supports text, image, and video embeddings (1024 dimensions, supports 256, 512, 1024, 2048)
+- **voyage-context-4**: Contextualized chunk embeddings, 120K tokens per request with auto-chunking (1024 dimensions, supports 256, 512, 1024, 2048)
+- **voyage-context-3**: Previous generation contextualized chunk embeddings, 120K tokens per request with auto-chunking (1024 dimensions, supports 256, 512, 1024, 2048)
 
 ### Legacy Models
 
@@ -265,14 +275,14 @@ VoyageAI offers several specialized embedding models:
 - **voyage-large-2-instruct**: Large instruct variant (1024 dimensions)
 - **voyage-code-2**: Code embedding model (1536 dimensions)
 
-For the latest model information, visit the [VoyageAI documentation](https://docs.voyageai.com/docs/embeddings).
+For the latest model information, visit the [Voyage AI documentation](https://docs.voyageai.com/docs/embeddings).
 
 ## Configuration Options
 
 | Parameter          | Type            | Default  | Description                                                   |
 | ------------------ | --------------- | -------- | ------------------------------------------------------------- |
 | `model_name`       | str             | Required | The embedding model to use                                    |
-| `voyage_api_key`   | str             | `None`   | VoyageAI API key (falls back to VOYAGE_API_KEY env var)       |
+| `voyage_api_key`   | str             | `None`   | Voyage AI API key (falls back to VOYAGE_API_KEY env var)      |
 | `embed_batch_size` | int             | `1000`   | Batch size for embedding calls (max 1000)                     |
 | `truncation`       | bool            | `None`   | Enable text truncation for long inputs                        |
 | `output_dtype`     | str             | `None`   | Output format: "float", "int8", "uint8", "binary", "ubinary"  |
@@ -284,8 +294,8 @@ For the latest model information, visit the [VoyageAI documentation](https://doc
 - **Dynamic Batching**: Automatically batches requests based on token limits for each model
 - **Token Management**: Respects per-model token limits (ranging from 32K to 1M tokens)
 - **Multimodal Support**: Process text, images, and videos with multimodal models
-- **Video Embeddings**: Embed video content with `voyage-multimodal-3.5` (requires voyageai>=0.3.6)
-- **Contextual Embeddings**: Enhanced context-aware embeddings with specialized models
+- **Video Embeddings**: Embed video content with `voyage-multimodal-3.5`
+- **Contextual Embeddings**: Contextualized chunk embeddings with server-side auto-chunking (`voyage-context-4`, `voyage-context-3`)
 - **Async Support**: Full async/await support for better performance
 - **Flexible Output**: Support for various output data types and dimensions
 - **Auto-truncation**: Optional text truncation for inputs exceeding model limits
@@ -314,16 +324,18 @@ These limits represent the maximum total tokens that can be sent in a single API
 | voyage-3                | 120,000           |
 | voyage-3-lite           | 120,000           |
 | voyage-code-2           | 120,000           |
-| voyage-context-4        | 32,000            |
-| voyage-context-3        | 32,000            |
+| voyage-context-4        | 120,000           |
+| voyage-context-3        | 120,000           |
+
+Contextualized models take 120,000 tokens per request in document mode (auto-chunking) and 32,000 tokens in query mode. `voyage-code-4` has no documented per-request token limit, so it is batched with the conservative 120,000 default.
 
 **Note:** The maximum batch size is 1,000 items per API request. The integration automatically handles batching based on both token limits and batch size.
 
 ## Environment Variables
 
-| Variable         | Description                 |
-| ---------------- | --------------------------- |
-| `VOYAGE_API_KEY` | VoyageAI API key (required) |
+| Variable         | Description                  |
+| ---------------- | ---------------------------- |
+| `VOYAGE_API_KEY` | Voyage AI API key (required) |
 
 ## Error Handling
 
@@ -337,11 +349,11 @@ The integration includes proper error handling for:
 
 ## Additional Information
 
-For more information about VoyageAI and its embedding models:
+For more information about Voyage AI by MongoDB and its embedding models:
 
-- [VoyageAI Documentation](https://docs.voyageai.com/)
-- [VoyageAI Embeddings Guide](https://docs.voyageai.com/docs/embeddings)
-- [VoyageAI Dashboard](https://dash.voyageai.com/)
+- [Voyage AI Documentation](https://docs.voyageai.com/)
+- [Voyage AI Embeddings Guide](https://docs.voyageai.com/docs/embeddings)
+- [Voyage AI Dashboard](https://dash.voyageai.com/)
 - [API Reference](https://docs.voyageai.com/reference/embeddings-api)
 
 ## License

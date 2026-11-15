@@ -249,12 +249,12 @@ def test_automatic_batching_with_long_texts(model: str):
     emb = VoyageEmbedding(model_name=model)
 
     # Create longer text to ensure we exceed token limits
-    # voyage-3.5 has 320k token limit, voyage-context-3 has 32k
+    # voyage-3.5 has 320k token limit, contextualized models have 120k
     # We'll use different configurations for each model
-    if model == CONTEXT_MODEL:
-        # ~500 tokens per text × 100 texts = ~50k tokens > 32k limit
+    if model in (CONTEXT_MODEL, CONTEXT_MODEL_4):
+        # ~450 tokens per text × 300 texts = ~135k tokens > 120k limit
         text = "This is a document with some content for testing. " * 40
-        num_texts = 100
+        num_texts = 300
     else:
         # For voyage-3.5 with 320k limit, we need much more tokens
         # Use longer text (~2000 tokens each) × 200 texts = ~400k tokens
@@ -279,6 +279,34 @@ def test_automatic_batching_with_long_texts(model: str):
 
     assert len(result) == num_texts
     assert all(isinstance(emb, list) for emb in result)
+
+
+@pytest.mark.parametrize("model", [CONTEXT_MODEL, CONTEXT_MODEL_4])
+def test_context_model_query_and_document_modes(model: str):
+    """Queries are embedded without auto-chunking, documents with it."""
+    emb = VoyageEmbedding(model_name=model)
+
+    query = emb._get_query_embedding("what is a test document?")
+    document = emb._get_text_embedding("This is a test document.")
+
+    assert len(query) == len(document) == 1024
+    assert query != document
+
+
+def test_context_model_rejects_text_split_into_several_chunks():
+    """A text longer than one 32k-token chunk cannot give a single embedding."""
+    emb = VoyageEmbedding(model_name=CONTEXT_MODEL_4)
+    long_text = "This is a sentence that repeats to fill the context window. " * 4000
+
+    with pytest.raises(ValueError, match="split into"):
+        emb._get_text_embedding(long_text)
+
+
+def test_unknown_model_is_rejected_by_the_api():
+    emb = VoyageEmbedding(model_name="voyage-not-a-model")
+
+    with pytest.raises(Exception, match="(?i)model"):
+        emb._get_text_embedding("text")
 
 
 # Integration tests for voyage-multimodal-3.5

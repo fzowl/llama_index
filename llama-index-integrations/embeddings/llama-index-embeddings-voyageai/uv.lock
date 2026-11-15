@@ -2017,11 +2017,11 @@ wheels = [
 
 [[package]]
 name = "llama-index-embeddings-voyageai"
-version = "0.8.0"
+version = "0.9.0"
 source = { editable = "." }
 dependencies = [
     { name = "llama-index-core" },
-    { name = "voyageai", marker = "python_full_version < '3.13'" },
+    { name = "voyageai", extra = ["video"] },
 ]
 
 [package.dev-dependencies]
@@ -2050,7 +2050,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "llama-index-core", specifier = ">=0.13.0,<0.15" },
-    { name = "voyageai", marker = "python_full_version >= '3.9' and python_full_version < '3.13'", specifier = ">=0.3.6,<0.4.0" },
+    { name = "voyageai", extras = ["video"], specifier = ">=0.4.0,<0.7.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -4527,24 +4527,28 @@ wheels = [
 
 [[package]]
 name = "voyageai"
-version = "0.3.7"
+version = "0.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
     { name = "aiolimiter" },
-    { name = "ffmpeg-python" },
     { name = "langchain-text-splitters" },
-    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version != '3.12.*'" },
-    { name = "numpy", version = "2.5.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.12.*'" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.5.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12' and python_full_version < '3.15'" },
     { name = "pillow" },
     { name = "pydantic" },
     { name = "requests" },
     { name = "tenacity" },
     { name = "tokenizers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/94/16/1b46b3cd401e1717a68197c1fe336d7bb4e0a1833f8105e1738f5b1add05/voyageai-0.3.7.tar.gz", hash = "sha256:826cd97f97223f42b5babc5c459c9c80f3a8215ce5c0e007b0b276550f790d24", size = 26485, upload-time = "2025-12-16T18:43:05.26Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0c/4d/f5cd158dbeb75e63ed955e84ac242184a8a73e07bdab0cbb6cdc6bc651d1/voyageai-0.6.0.tar.gz", hash = "sha256:9327de6130f8f755211470a4d135186461796c3c316488199c7485eea9213b69", size = 38358, upload-time = "2026-11-10T07:47:30.206Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/60/64/89f6325666d6836979f94ac88b96fefc7527e02e61abc81359843585e088/voyageai-0.3.7-py3-none-any.whl", hash = "sha256:909f6c033001e5a3b3caf970525bf3614a1bfef9003cf3c3b68207dfdb53e86d", size = 34691, upload-time = "2025-12-16T18:43:04.073Z" },
+    { url = "https://files.pythonhosted.org/packages/44/97/0c47cc38ee936356aef9dc7597577f08abbb6bdc8fee731ef2e0282bf36c/voyageai-0.6.0-py3-none-any.whl", hash = "sha256:54056603896c867d63c78d159415239a4bb767d8973bebb731500584444986ef", size = 48068, upload-time = "2026-11-10T07:47:29.208Z" },
+]
+
+[package.optional-dependencies]
+video = [
+    { name = "ffmpeg-python" },
 ]
 
 [[package]]

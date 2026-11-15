@@ -1,6 +1,6 @@
-# LlamaIndex Postprocessor Integration: VoyageAI Rerank
+# LlamaIndex Postprocessor Integration: Voyage AI by MongoDB Rerank
 
-This package provides the VoyageAI Rerank integration for LlamaIndex, enabling powerful re-ranking of search results using VoyageAI's state-of-the-art reranker models.
+This package provides the Voyage AI by MongoDB Rerank integration for LlamaIndex, enabling powerful re-ranking of search results using Voyage AI by MongoDB's state-of-the-art reranker models.
 
 ## Installation
 
@@ -12,7 +12,7 @@ pip install llama-index-postprocessor-voyageai-rerank
 
 ### Get Your API Key
 
-Sign up for a VoyageAI account and obtain your API key from the [VoyageAI Dashboard](https://dash.voyageai.com/).
+Sign up for a Voyage AI by MongoDB account and obtain your API key from the [Voyage AI Dashboard](https://dash.voyageai.com/).
 
 ### Set Environment Variable
 
@@ -38,7 +38,7 @@ index = VectorStoreIndex.from_documents(documents)
 
 # Create reranker
 reranker = VoyageAIRerank(
-    model="rerank-2.5",  # Model to use
+    model="rerank-3",  # Model to use
     api_key="your-api-key",  # Optional if VOYAGE_API_KEY is set
     top_n=2,  # Return top 2 results
 )
@@ -62,13 +62,15 @@ from llama_index.postprocessor.voyageai_rerank import VoyageAIRerank
 # Setup
 documents = [
     Document(text="LlamaIndex is a data framework for LLM applications."),
-    Document(text="VoyageAI provides state-of-the-art embedding models."),
+    Document(
+        text="Voyage AI by MongoDB provides state-of-the-art embedding models."
+    ),
     Document(text="Rerankers improve search quality by re-scoring results."),
 ]
 index = VectorStoreIndex.from_documents(documents)
 
 # Create reranker
-reranker = VoyageAIRerank(model="rerank-2.5", top_n=3)
+reranker = VoyageAIRerank(model="rerank-3", top_n=3)
 
 # Use with query engine
 query_engine = index.as_query_engine(
@@ -79,14 +81,14 @@ response = query_engine.query("How do rerankers work?")
 print(response)
 ```
 
-### Combined with VoyageAI Embeddings
+### Combined with Voyage AI Embeddings
 
 ```python
 from llama_index.core import VectorStoreIndex, Document, Settings
 from llama_index.embeddings.voyageai import VoyageEmbedding
 from llama_index.postprocessor.voyageai_rerank import VoyageAIRerank
 
-# Use VoyageAI for both embeddings and reranking
+# Use Voyage AI for both embeddings and reranking
 Settings.embed_model = VoyageEmbedding(model_name="voyage-3.5")
 
 documents = [
@@ -97,7 +99,7 @@ documents = [
 index = VectorStoreIndex.from_documents(documents)
 
 # Rerank results
-reranker = VoyageAIRerank(model="rerank-2.5", top_n=2)
+reranker = VoyageAIRerank(model="rerank-3", top_n=2)
 
 query_engine = index.as_query_engine(
     similarity_top_k=5, node_postprocessors=[reranker]
@@ -109,30 +111,35 @@ print(response)
 
 ## Available Models
 
-VoyageAI offers several reranker models optimized for different use cases:
+Voyage AI by MongoDB offers several reranker models optimized for different use cases:
 
 ### Current Models
 
-- **rerank-2.5**: Latest generalist model with 32K context length, instruction-following, and multilingual capabilities (recommended)
+- **rerank-3**: Highest accuracy, 32K context length (recommended for most applications)
+- **rerank-3-lite**: Fast and cost-effective, optimized for latency-sensitive applications, 32K context length
+
+### Previous Models
+
+- **rerank-2.5**: Generalist model with 32K context length, instruction-following, and multilingual capabilities
 - **rerank-2.5-lite**: Optimized for both speed and accuracy, 32K context, multilingual support
-- **rerank-2**: Earlier generation model with stable performance
-- **rerank-2-lite**: Faster variant of rerank-2
+- **rerank-2**: Second generation model, 16K context length
+- **rerank-2-lite**: Faster variant of rerank-2, 8K context length
 
 ### Legacy Models
 
 - **rerank-1**: Original reranker model
 - **rerank-lite-1**: Lightweight variant
 
-For the latest models, see the [VoyageAI Reranker documentation](https://docs.voyageai.com/docs/reranker).
+For the latest models, see the [Voyage AI Reranker documentation](https://docs.voyageai.com/docs/reranker).
 
 ## Configuration Options
 
-| Parameter    | Type           | Default  | Description                                                     |
-| ------------ | -------------- | -------- | --------------------------------------------------------------- |
-| `model`      | str            | Required | The reranker model to use                                       |
-| `api_key`    | str (optional) | None     | VoyageAI API key (falls back to VOYAGE_API_KEY environment var) |
-| `top_n`      | int (optional) | None     | Number of top results to return. If None, returns all reranked  |
-| `truncation` | bool           | True     | Whether to auto-truncate documents to fit within token limits   |
+| Parameter    | Type           | Default  | Description                                                      |
+| ------------ | -------------- | -------- | ---------------------------------------------------------------- |
+| `model`      | str            | Required | The reranker model to use                                        |
+| `api_key`    | str (optional) | None     | Voyage AI API key (falls back to VOYAGE_API_KEY environment var) |
+| `top_n`      | int (optional) | None     | Number of top results to return. If None, returns all reranked   |
+| `truncation` | bool           | True     | Whether to auto-truncate documents to fit within token limits    |
 
 **Deprecated:**
 
@@ -149,35 +156,37 @@ This two-stage approach balances speed (fast vector search) with accuracy (preci
 
 ## Features
 
-- **State-of-the-art Models**: Access to VoyageAI's latest reranker models
+- **State-of-the-art Models**: Access to Voyage AI by MongoDB's latest reranker models
 - **Easy Integration**: Drop-in compatibility with LlamaIndex retrievers and query engines
 - **Flexible Configuration**: Control number of results and truncation behavior
-- **Multilingual Support**: Works with multiple languages (rerank-2.5 models)
+- **Multilingual Support**: Works with multiple languages
 - **32K Context**: Handle long documents with 32,000 token context window
 - **Auto-truncation**: Automatically handles documents exceeding token limits
 
 ## Context Length Limits
 
-| Model           | Max Query Tokens | Max Document Tokens | Total Context |
-| --------------- | ---------------- | ------------------- | ------------- |
-| rerank-2.5      | 8,000            | Per document        | 32,000        |
-| rerank-2.5-lite | 8,000            | Per document        | 32,000        |
-| rerank-2        | 8,000            | Per document        | 4,000         |
-| rerank-2-lite   | 8,000            | Per document        | 4,000         |
+| Model           | Max Query Tokens | Max Query + Document Tokens |
+| --------------- | ---------------- | --------------------------- |
+| rerank-3        | 8,000            | 32,000                      |
+| rerank-3-lite   | 8,000            | 32,000                      |
+| rerank-2.5      | 8,000            | 32,000                      |
+| rerank-2.5-lite | 8,000            | 32,000                      |
+| rerank-2        | 4,000            | 16,000                      |
+| rerank-2-lite   | 2,000            | 8,000                       |
 
 The reranker can process up to 1,000 documents per request.
 
 ## Environment Variables
 
-| Variable         | Description                 |
-| ---------------- | --------------------------- |
-| `VOYAGE_API_KEY` | VoyageAI API key (required) |
+| Variable         | Description                  |
+| ---------------- | ---------------------------- |
+| `VOYAGE_API_KEY` | Voyage AI API key (required) |
 
 ## Best Practices
 
 1. **Use appropriate top_n**: Set `top_n` to limit results to the most relevant documents
 2. **Balance initial retrieval**: Retrieve more candidates (e.g., `similarity_top_k=10`) than you need, then use reranker to select the best
-3. **Choose the right model**: Use `rerank-2.5` for best quality, `rerank-2.5-lite` for speed
+3. **Choose the right model**: Use `rerank-3` for best quality, `rerank-3-lite` for speed
 4. **Enable truncation**: Keep `truncation=True` (default) to handle long documents gracefully
 
 ## Examples
@@ -187,31 +196,29 @@ The reranker can process up to 1,000 documents per request.
 ```python
 from llama_index.postprocessor.voyageai_rerank import VoyageAIRerank
 
-reranker = VoyageAIRerank(model="rerank-2.5", top_n=3)
+reranker = VoyageAIRerank(model="rerank-3", top_n=3)
 ```
 
 ### Example 2: Without Top-N Filtering
 
 ```python
 # Return all reranked results
-reranker = VoyageAIRerank(model="rerank-2.5")
+reranker = VoyageAIRerank(model="rerank-3")
 ```
 
 ### Example 3: With Custom API Key
 
 ```python
-reranker = VoyageAIRerank(
-    model="rerank-2.5", api_key="your-custom-key", top_n=5
-)
+reranker = VoyageAIRerank(model="rerank-3", api_key="your-custom-key", top_n=5)
 ```
 
 ## Additional Information
 
-For more information about VoyageAI rerankers:
+For more information about Voyage AI by MongoDB rerankers:
 
-- [VoyageAI Documentation](https://docs.voyageai.com/)
-- [VoyageAI Reranker Guide](https://docs.voyageai.com/docs/reranker)
-- [VoyageAI Dashboard](https://dash.voyageai.com/)
+- [Voyage AI Documentation](https://docs.voyageai.com/)
+- [Voyage AI Reranker Guide](https://docs.voyageai.com/docs/reranker)
+- [Voyage AI Dashboard](https://dash.voyageai.com/)
 - [API Reference](https://docs.voyageai.com/reference/reranker-api)
 
 ## License

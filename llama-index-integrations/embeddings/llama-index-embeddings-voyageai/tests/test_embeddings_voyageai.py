@@ -1,4 +1,5 @@
-from unittest.mock import Mock, patch
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -239,26 +240,24 @@ def test_build_batches_respects_max_batch_size():
 
 
 def test_build_batches_context_model_token_limit():
-    """Test batch building with context model's smaller token limit."""
+    """Context models take 120k tokens per request in document mode, 32k in query mode."""
     emb = VoyageEmbedding(
         model_name="voyage-context-3",
         voyage_api_key="NOT_A_VALID_KEY",
         embed_batch_size=100,
     )
 
-    # Mock tokenize to return 20k tokens per text
-    # Context-3 has 32k token limit, so should fit 1 text per batch
-    mock_tokenize = Mock(return_value=[[1] * 20000])
-    emb._client.tokenize = mock_tokenize  # type: ignore[method-assign]
-
+    emb._client.tokenize = Mock(return_value=[[1] * 50000])  # type: ignore[method-assign]
     texts = ["text1", "text2", "text3"]
-    batches = list(emb._build_batches(texts))
 
-    # With 20k tokens each and 32k limit, should create 3 batches
-    assert len(batches) == 3
-    assert batches[0] == (["text1"], 1)
-    assert batches[1] == (["text2"], 1)
-    assert batches[2] == (["text3"], 1)
+    # 50k tokens each, 120k limit: two texts fit, the third starts a new batch
+    batches = list(emb._build_batches(texts, "document"))
+    assert batches == [(["text1", "text2"], 2), (["text3"], 1)]
+
+    # 20k tokens each, 32k limit without auto-chunking: one text per batch
+    emb._client.tokenize = Mock(return_value=[[1] * 20000])  # type: ignore[method-assign]
+    batches = list(emb._build_batches(texts, "query"))
+    assert batches == [(["text1"], 1), (["text2"], 1), (["text3"], 1)]
 
 
 def test_build_batches_mixed_token_sizes():
@@ -343,32 +342,127 @@ async def test_aembed_with_batching():
     assert len(result) == 4
 
 
-def test_embed_context_model_with_batching():
-    """Test context model embedding uses batching correctly."""
-    emb = VoyageEmbedding(
-        model_name="voyage-context-3",
-        voyage_api_key="NOT_A_VALID_KEY",
-        embed_batch_size=2,
+def _contextualized_response(counts, indexes=None):
+    """Build a fake contextualized_embed response; counts[i] chunks for input i."""
+    indexes = indexes if indexes is not None else range(len(counts))
+    return SimpleNamespace(
+        results=[
+            SimpleNamespace(
+                index=index,
+                embeddings=[[float(index), float(chunk)] for chunk in range(count)],
+            )
+            for index, count in zip(indexes, counts)
+        ]
     )
 
-    # Mock tokenize and contextualized_embed
-    mock_tokenize = Mock(return_value=[[1, 2, 3]])
-    emb._client.tokenize = mock_tokenize  # type: ignore[method-assign]
 
-    mock_result_obj = Mock()
-    mock_result_obj.embeddings = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
-    mock_embed_result = Mock()
-    mock_embed_result.results = [mock_result_obj]
-    mock_contextualized_embed = Mock(return_value=mock_embed_result)
-    emb._client.contextualized_embed = mock_contextualized_embed  # type: ignore[method-assign]
+def _context_embedder(embed_batch_size: int = 2) -> VoyageEmbedding:
+    emb = VoyageEmbedding(
+        model_name="voyage-context-4",
+        voyage_api_key="NOT_A_VALID_KEY",
+        embed_batch_size=embed_batch_size,
+    )
+    emb._client.tokenize = Mock(return_value=[[1, 2, 3]])  # type: ignore[method-assign]
+    return emb
 
-    texts = ["text1", "text2", "text3", "text4"]
-    result = emb._embed(texts, "document")
 
-    # Should call contextualized_embed twice
-    assert mock_contextualized_embed.call_count == 2
-    # Should return all 4 embeddings
-    assert len(result) == 4
+def test_embed_context_model_document_batches_are_flat_and_auto_chunked():
+    emb = _context_embedder()
+    mock_embed = Mock(
+        side_effect=lambda inputs, **kwargs: _contextualized_response([1] * len(inputs))
+    )
+    emb._client.contextualized_embed = mock_embed  # type: ignore[method-assign]
+
+    result = emb._embed(["text1", "text2", "text3"], "document")
+
+    assert len(result) == 3
+    assert mock_embed.call_count == 2
+    for call, expected in zip(
+        mock_embed.call_args_list, [["text1", "text2"], ["text3"]]
+    ):
+        assert call.kwargs["inputs"] == expected
+        assert call.kwargs["enable_auto_chunking"] is True
+        assert call.kwargs["chunk_size"] == 32_000
+        assert call.kwargs["input_type"] == "document"
+
+
+def test_embed_context_model_query_is_not_auto_chunked():
+    emb = _context_embedder()
+    mock_embed = Mock(return_value=_contextualized_response([1]))
+    emb._client.contextualized_embed = mock_embed  # type: ignore[method-assign]
+
+    emb._embed(["a question"], "query")
+
+    kwargs = mock_embed.call_args.kwargs
+    assert kwargs["inputs"] == ["a question"]
+    assert kwargs["input_type"] == "query"
+    assert "enable_auto_chunking" not in kwargs
+    assert "chunk_size" not in kwargs
+
+
+def test_embed_context_model_keeps_input_order():
+    emb = _context_embedder(embed_batch_size=3)
+    emb._client.contextualized_embed = Mock(  # type: ignore[method-assign]
+        return_value=_contextualized_response([1, 1, 1], indexes=[2, 0, 1])
+    )
+
+    result = emb._embed(["a", "b", "c"], "document")
+
+    assert [vector[0] for vector in result] == [0.0, 1.0, 2.0]
+
+
+@pytest.mark.parametrize("input_type", [None, "search"])
+def test_embed_context_model_rejects_unsupported_input_type(input_type):
+    emb = _context_embedder()
+    emb._client.contextualized_embed = Mock()  # type: ignore[method-assign]
+
+    with pytest.raises(ValueError, match="'document' or 'query'"):
+        emb.get_general_text_embedding("text", input_type=input_type)
+    emb._client.contextualized_embed.assert_not_called()
+
+
+def test_embed_context_model_rejects_text_split_into_several_chunks():
+    emb = _context_embedder()
+    emb._client.contextualized_embed = Mock(  # type: ignore[method-assign]
+        return_value=_contextualized_response([1, 2])
+    )
+
+    with pytest.raises(ValueError, match="split into 2 chunks"):
+        emb._embed(["short", "very long"], "document")
+
+
+@pytest.mark.asyncio
+async def test_aembed_context_model_flat_auto_chunked_and_rejects_split():
+    emb = _context_embedder()
+    mock_embed = AsyncMock(return_value=_contextualized_response([1, 1]))
+    emb._aclient.contextualized_embed = mock_embed  # type: ignore[method-assign]
+
+    result = await emb._aembed(["a", "b"], "document")
+
+    assert len(result) == 2
+    assert mock_embed.call_args.kwargs["inputs"] == ["a", "b"]
+    assert mock_embed.call_args.kwargs["enable_auto_chunking"] is True
+
+    mock_embed.return_value = _contextualized_response([3, 1])
+    with pytest.raises(ValueError, match="split into 3 chunks"):
+        await emb._aembed(["a", "b"], "document")
+
+
+def test_multimodal_text_embedding_passes_output_dimension():
+    emb = VoyageEmbedding(
+        model_name="voyage-multimodal-3.5",
+        voyage_api_key="NOT_A_VALID_KEY",
+        output_dimension=512,
+        output_dtype="int8",
+    )
+    emb._client.tokenize = Mock(return_value=[[1, 2, 3]])  # type: ignore[method-assign]
+    mock_embed = Mock(return_value=SimpleNamespace(embeddings=[[1, 2]]))
+    emb._client.multimodal_embed = mock_embed  # type: ignore[method-assign]
+
+    emb._embed(["text"], "document")
+
+    assert mock_embed.call_args.kwargs["output_dimension"] == 512
+    assert mock_embed.call_args.kwargs["output_dtype"] == "int8"
 
 
 def test_automatic_batching_due_to_token_limits():
